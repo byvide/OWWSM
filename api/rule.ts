@@ -73,12 +73,12 @@ const LINTERS = {
             ? "Title cannot exceed 128 characters."
             : "";
     },
-    NO_conditions(rule: Rule) {
+    no_conditions(rule: Rule) {
         return rule.conditions.expose().length
             ? "Subroutines cannot have conditions."
             : "";
     },
-    NO_eventplayer_ref(rule: Rule) {
+    no_eventplayer_ref(rule: Rule) {
         return (rule.actions.expose().some((item) =>
                 item.includes("EVENTPLAYER")
             ) ||
@@ -88,7 +88,7 @@ const LINTERS = {
             ? "Global rules cannot contain Event Player references."
             : "";
     },
-    NO_attacker_or_victim_ref(rule: Rule) {
+    no_attacker_or_victim_ref(rule: Rule) {
         return (rule.actions.expose().some((item) =>
                 item.includes("ATTACKER")
             ) ||
@@ -105,11 +105,11 @@ const LINTERS = {
 } satisfies { [key: string]: LinterFunction };
 
 const LINTER_SETS = {
-    global: [LINTERS.title_length, LINTERS.NO_eventplayer_ref],
-    subroutine: [LINTERS.title_length, LINTERS.NO_conditions],
+    global: [LINTERS.title_length, LINTERS.no_eventplayer_ref],
+    subroutine: [LINTERS.title_length, LINTERS.no_conditions],
     playerGeneral: [
         LINTERS.title_length,
-        LINTERS.NO_attacker_or_victim_ref,
+        LINTERS.no_attacker_or_victim_ref,
     ],
     playerCombat: [LINTERS.title_length],
 };
@@ -148,7 +148,7 @@ function lintRule(rule: Rule, linterSet: LinterFunction[]) {
     if (report.length) {
         return { ref: rule, problems: report };
     }
-    return false;
+    return null;
 }
 function mergeRule(a: Rule, b: Rule) { // does not check for equality; when 'a' and 'b' are the same, actions will be duplicated
     a.actions.append(b.actions.expose());
@@ -200,18 +200,19 @@ const createRuleAPI = (
             }
             return this;
         },
-
-        _compile() {
-            return compileRule(rule);
-        },
-        _hash() {
-            return hashRule(rule);
-        },
-        _lint() {
-            return lintRule(rule, linterSet);
-        },
-        _expose() {
-            return rule;
+        _: {
+            compile() {
+                return compileRule(rule);
+            },
+            hash() {
+                return hashRule(rule);
+            },
+            lint() {
+                return lintRule(rule, linterSet);
+            },
+            expose() {
+                return rule;
+            },
         },
         priority(number: number) {
             rule.priority = number;
@@ -265,6 +266,8 @@ export const processRegistry = (): Rule[] => {
             processedRules.push(...rules);
         }
     }
+
+    //FIXME break them up if too long?
 
     return processedRules;
 };
