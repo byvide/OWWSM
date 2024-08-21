@@ -1,4 +1,4 @@
-import { hashString, SubroutineREF } from "./_temp.ts";
+import { hashString, SubroutineReference } from "./_temp.ts";
 import { Team } from "./values.const.ts";
 import { Player } from "./values.derived.ts";
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +51,9 @@ export const GlobalEvent: () => EventAPI = (() => {
     };
 })();
 
-export const SubroutineEvent = (ref: SubroutineREF): EventAPI => {
+export const SubroutineEvent = (
+    ref: SubroutineReference,
+): EventAPI => {
     const content = ["Subroutine", ref];
     return {
         compile: () => compileEvent(content),

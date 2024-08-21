@@ -1,4 +1,4 @@
-import { hashString, SubroutineREF } from "./_temp.ts";
+import { hashString, SubroutineReference } from "./_temp.ts";
 import {
     EventAPI,
     GlobalEvent,
@@ -28,7 +28,7 @@ class ActionCollection {
         return `\
     actions
     {
-		${this.actions.join(";\n\t")};
+	${this.actions.join(";\n\t")};
     }`;
     }
 }
@@ -104,7 +104,7 @@ const LINTERS = {
     },
 } satisfies { [key: string]: LinterFunction };
 
-const LINTER_SETS = {
+export const LINTER_SETS = {
     global: [LINTERS.title_length, LINTERS.no_eventplayer_ref],
     subroutine: [LINTERS.title_length, LINTERS.no_conditions],
     playerGeneral: [
@@ -114,7 +114,7 @@ const LINTER_SETS = {
     playerCombat: [LINTERS.title_length],
 };
 ////////////////////////////////////////////////////////////////////////////////////////
-class Rule {
+export class Rule {
     title = "";
     disabled = false;
     actions = new ActionCollection();
@@ -162,7 +162,7 @@ export interface AddConditionsOptions {
     prepend: boolean;
 }
 
-const createRuleAPI = (
+export const createRuleAPI = (
     event: EventAPI,
     linterSet: LinterFunction[],
 ) => {
@@ -225,7 +225,7 @@ const createRuleAPI = (
 export const GlobalRule = () => {
     return createRuleAPI(GlobalEvent(), LINTER_SETS.global);
 };
-export const Subroutine = (ref: SubroutineREF) => {
+export const Subroutine = (ref: SubroutineReference) => {
     const res = createRuleAPI(SubroutineEvent(ref), LINTER_SETS.subroutine);
     return res as Omit<typeof res, "conditions">;
 };
