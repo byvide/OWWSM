@@ -1,5 +1,5 @@
 import { GlobalEvent, PlayerEvent, SubroutineEvent } from "./event.ts";
-import { GlobalRule, PlayerRule, Subroutine } from "./rule.ts";
+import { GlobalRule, PlayerRule, Subroutine } from "./rule_api.ts";
 import { SLOT, TEAM } from "./values.const.ts";
 
 export const api = {

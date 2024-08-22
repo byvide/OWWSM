@@ -1,5 +1,7 @@
 # OWWSM
 
+![](/doc_assets/concept.png)
+
 ## License and Usage
 
 Please note that while this repository is public, it does not include an

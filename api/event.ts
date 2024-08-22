@@ -1,14 +1,49 @@
-import { hashString, SubroutineReference } from "./_temp.ts";
+import { hashString, INTEROP_SYMBOL, SubroutineReference } from "./_temp.ts";
 import { Team } from "./values.const.ts";
 import { Player } from "./values.derived.ts";
 ////////////////////////////////////////////////////////////////////////////////////////
-export interface EventAPI {
+export interface EventInterop {
     compile: () => string;
     hash: () => Promise<string>;
 }
-export interface PlayerEventAPI extends EventAPI {
-    type: PlayerEventCategory;
+////////////////////////////////////////////////////////////////////////////////////////
+function compileEvent(content: string[]): string {
+    return `\
+    event
+    {
+        ${content.join(";\n\t")};
+    }`;
 }
+function hashEvent(content: string) {
+    return hashString(content);
+}
+////////////////////////////////////////////////////////////////////////////////////////
+export const GlobalEvent: () => { [INTEROP_SYMBOL]: EventInterop } = (() => {
+    const content = "Ongoing - Global";
+    const wrappedContent = compileEvent([content]);
+    const hashedContent = hashEvent(content);
+
+    return () => {
+        return {
+            [INTEROP_SYMBOL]: {
+                compile: () => wrappedContent,
+                hash: () => hashedContent,
+            },
+        };
+    };
+})();
+////////////////////////////////////////////////////////////////////////////////////////
+export const SubroutineEvent = (
+    ref: SubroutineReference,
+): { [INTEROP_SYMBOL]: EventInterop } => {
+    const content = ["Subroutine", ref];
+    return {
+        [INTEROP_SYMBOL]: {
+            compile: () => compileEvent(content),
+            hash: () => hashEvent(content.join()),
+        },
+    };
+};
 ////////////////////////////////////////////////////////////////////////////////////////
 type PlayerEventCategory = "general" | "combat";
 type PlayerEventType = keyof typeof PET_TO_CAT;
@@ -26,56 +61,26 @@ const PET_TO_CAT = {
     "Player Dealt Knockback": "combat",
     "Player Received Knockback": "combat",
 } satisfies { [key: string]: PlayerEventCategory };
-////////////////////////////////////////////////////////////////////////////////////////
-function compileEvent(content: string[]): string {
-    return `\
-    event
-    {
-        ${content.join(";\n\t")};
-    }`;
-}
-function hashEvent(content: string) {
-    return hashString(content);
-}
-////////////////////////////////////////////////////////////////////////////////////////
-export const GlobalEvent: () => EventAPI = (() => {
-    const content = "Ongoing - Global";
-    const wrappedContent = compileEvent([content]);
-    const hashedContent = hashEvent(content);
-
-    return () => {
-        return {
-            compile: () => wrappedContent,
-            hash: () => hashedContent,
-        };
-    };
-})();
-
-export const SubroutineEvent = (
-    ref: SubroutineReference,
-): EventAPI => {
-    const content = ["Subroutine", ref];
-    return {
-        compile: () => compileEvent(content),
-        hash: () => hashEvent(content.join()),
-    };
-};
 
 export interface PlayerEventOptions {
     type?: PlayerEventType;
     team?: Team;
     player?: Player;
 }
-export const PlayerEvent = (opt?: PlayerEventOptions): PlayerEventAPI => {
+export const PlayerEvent = (
+    opt?: PlayerEventOptions,
+): { type: PlayerEventCategory; [INTEROP_SYMBOL]: EventInterop } => {
     const type: PlayerEventType = opt?.type ?? "Ongoing - Each Player";
     const team: Team = opt?.team ?? "All";
     const player: Player = opt?.player ?? "All";
 
     const content = [type, team, player];
     return {
-        compile: () => compileEvent(content as string[]),
-        hash: () => hashEvent(content.join()),
-        type: PET_TO_CAT[type],
+        type: PET_TO_CAT[type], //FIXME readonly?
+        [INTEROP_SYMBOL]: {
+            compile: () => compileEvent(content as string[]),
+            hash: () => hashEvent(content.join()),
+        },
     };
 };
 ////////////////////////////////////////////////////////////////////////////////////////
