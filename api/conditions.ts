@@ -87,7 +87,7 @@ export const Conditions = () => {
                     LINTER_SETS.conditions.basic,
                 );
             },
-
+            // no comments + no accidental trailing coma + no duplicate statements + ordered alphabetically + full lowercase
             normalized() {
                 if (todo.normalized) {
                     normalized = normalizeConditions(this.purified());
@@ -95,6 +95,7 @@ export const Conditions = () => {
                 }
                 return normalized;
             },
+            // no comments
             purified() {
                 if (todo.purified) {
                     purified = removeCommentAnnotation(conditions);

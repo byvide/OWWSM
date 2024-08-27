@@ -58,7 +58,7 @@ export function compileConditions(cArr: T) {
 // (1) and the content within each condition alphabetically
 // (0) working with lowercase
 // BEFORE [ 'False == True', 'True != False', 'True > False' ]
-// AFTER [ 'false == true', 'false != true', 'false < true' ]
+// AFTER [ 'false != true', 'false < true', 'false == true', ]
 export function normalizeConditions(
     cArr: T,
 ): T {

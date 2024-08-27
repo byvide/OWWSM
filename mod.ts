@@ -1,43 +1,23 @@
-import { Module } from "./api/module.ts";
-import { foo } from "./api/variables.ts";
-////////////////////////////////////////////////////////////////////////////////////////////////
-import { USE_CUSTOM_ECMASCRIPT_API_PATCH } from "./PATCH_ECMASCRIPT.ts";
+import { FMA_MODULE_IMPORTER } from './mod/FFA_MAP_ATTRIBUTES.ts';
+////////////////////////////////////////////////////////////////////////////////////////
+import { USE_CUSTOM_ECMASCRIPT_API_PATCH } from './PATCH_ECMASCRIPT.ts';
 void USE_CUSTOM_ECMASCRIPT_API_PATCH;
-////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
 
-const m = Module({
-    name: "ATTR",
-    global: {
-        "hello": "asd",
-    },
-    player: {
-        "bello": "",
-    },
+const m = FMA_MODULE_IMPORTER({
+	includeVisuals: true,
+	asSubroutine: true,
 });
 
-m.new.GlobalRule()
-    .actions([
-        `${m.var.player.bello()} = "Hello there"`,
-        "Loop",
-        "Loop",
-    ])
-    .title(
-        "Something123456789Something123456789Something123456789Something123456789Something123456789Something123456789Something123456789Something123456789",
-    );
+m.lint().log();
 
-m.new.PlayerRule()
-    .title("asd")
-    .disable()
-    .conditions([
-        "Attacker == hello",
-        "ok  > ok",
-    ])
-    .actions([
-        "Ok",
-    ]);
-
-// m._interop.compile({ includeVariablesAs: 12 }).log();
-
-// foo("hello").bello;
-const a = foo("hello", m._interop._content.globalVariables)?.hello?.[2];
-console.log(a);
+console.log(`
+settings
+{
+	modes
+	{
+		Deathmatch
+	}
+}    
+        `);
+m.compile({ lint: false, includeVariablesAs: 12 }).log();

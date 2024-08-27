@@ -60,6 +60,7 @@ export const Actions = () => {
                 return compileActions(actions);
             },
 
+            //no comments + no accidental trailing comma + full lowercase
             normalized() {
                 if (todo.normalized) {
                     normalized = normalizeActions(this.purified());
@@ -67,6 +68,7 @@ export const Actions = () => {
                 }
                 return normalized;
             },
+            // no comments
             purified() {
                 if (todo.purified) {
                     purified = removeCommentAnnotation(actions);

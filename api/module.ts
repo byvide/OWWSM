@@ -1,10 +1,16 @@
-import { LINTER_SETS, lintReport, lintResult } from "./_linters.ts";
-import { SubroutineReference } from "./_temp.ts";
-import { PlayerEventOptions } from "./event.ts";
-import { ModuleComponent } from "./module_base.ts";
-import { GlobalRule, PlayerRule, Subroutine } from "./rule.ts";
-import { indexVariableSet, VariableMap, VariableSet } from "./variables.ts";
-import { compileVariableSets } from "./workshop.ts";
+import { LINTER_SETS, lintReport, lintResult } from './_linters.ts';
+import { SubroutineReference } from './_temp.ts';
+import { PlayerEventOptions } from './event.ts';
+import { ModuleComponent } from './module_base.ts';
+import { GlobalRule, PlayerRule, RuleInterop, Subroutine } from './rule.ts';
+import {
+    buildRecursiveProxy,
+    Gömböc,
+    indexVariableSet,
+    VariableMap,
+    VariableSet,
+} from './variables.ts';
+import { compileVariableSets } from './workshop.ts';
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 export interface ModuleInterop {
@@ -46,25 +52,31 @@ export const Module = <
         indexVariableSet(context.player),
     );
 
-    const mirroredGlobalVars = bakeVariables(
-        mod.globalVariables,
-        mod.name,
-        "Global",
-    ) as {
-        [K in keyof TGlobal]: () => string;
-    };
-    const mirroredPlayerVars = bakeVariables(
-        mod.playerVariables,
-        mod.name,
-        "Event Player",
-    ) as {
-        [K in keyof TPlayer]: (prefix?: string) => string;
-    };
-
     return {
         var: {
-            global: mirroredGlobalVars,
-            player: mirroredPlayerVars,
+            Global(): {
+                [K in keyof TGlobal]: Gömböc;
+            } {
+                return bakeVariablesIntoGömböc(
+                    `Global.${mod.name}`,
+                    mod.globalVariables,
+                );
+            },
+
+            Player(
+                player?: string,
+            ): {
+                [K in keyof TPlayer]: Gömböc;
+            } {
+                if (!player) {
+                    player = 'Event Player';
+                }
+
+                return bakeVariablesIntoGömböc(
+                    `${player}.${mod.name}`,
+                    mod.globalVariables,
+                );
+            },
         },
         new: {
             GlobalRule() {
@@ -84,6 +96,13 @@ export const Module = <
             },
         },
 
+        patch: {
+            attachRules(...rules: RuleInterop[]) {
+                mod.ruleInterops.push(...rules);
+                return this;
+            },
+        },
+
         //TODO add/attacH/reset ... naming and fields
         // attachRules(...rules: RuleInterop[]) {
         //     mod.ruleInterops.push(...rules);
@@ -91,24 +110,29 @@ export const Module = <
         // detachRules(...rules: RuleInterop[]) {
         //     mod.ruleInterops.push(...rules);
         // },
-        ["_interop"]: {
+        ['_interop']: {
             _content: mod,
 
             compile(options?: CompileModuleOptions) {
-                if (options?.lint && this.lint()) {
-                    throw new Error(
-                        "Rule failed on linting, aborting compile function.",
-                    );
+                if (options?.lint) {
+                    console.log('---------------LINT START---------------');
+                    const res = this.lint();
+                    console.log('---------------LINT END---------------');
+                    if (res.length) {
+                        throw new Error(
+                            'Rule failed on linting, aborting compile function.\n' + res.log(),
+                        );
+                    }
                 }
                 return ((options?.includeVariablesAs)
                     ? compileVariableSets(
                         [this.signature()],
                         options.includeVariablesAs,
                     )
-                    : "") +
+                    : '') +
                     mod.ruleInterops.reduce((acc, curr) => {
-                        return acc += "\n" + curr.compile();
-                    }, "");
+                        return acc += '\n' + curr.compile();
+                    }, '');
             },
             signature() {
                 return {
@@ -124,7 +148,7 @@ export const Module = <
                 );
             },
         } as ModuleInterop,
-        priority(number: number) {
+        priority(number: number) { //FIXME maybe this should be in interop so accessable from imports?
             mod.priority = number;
             return this;
         },
@@ -132,14 +156,11 @@ export const Module = <
 };
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-// { hello: 12 }
-// { hello: () => Global.hello }
-const bakeVariables = (map: VariableMap, tag: string, defaul: string) => {
-    return Object.keys(map).reduce((acc, key) => {
-        acc[key as keyof typeof map] = (prefix?: string) =>
-            `${prefix ?? defaul}.${tag}[${map[key]}]`;
-        return acc;
-    }, {} as { [K in keyof typeof map]: (prefix?: string) => string });
+export const bakeVariablesIntoGömböc = (
+    prefix: string,
+    variableMap: VariableMap,
+) => {
+    return buildRecursiveProxy(prefix, variableMap);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

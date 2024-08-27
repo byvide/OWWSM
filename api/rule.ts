@@ -1,20 +1,15 @@
-import {
-    LINTER_SETS,
-    LinterFunction,
-    lintReport,
-    lintResult,
-} from "./_linters.ts";
-import { SubroutineReference } from "./_temp.ts";
-import { ActionLike } from "./actions_base.ts";
-import { ConditionLike } from "./conditions_base.ts";
+import { LINTER_SETS, LinterFunction, lintReport, lintResult } from './_linters.ts';
+import { SubroutineReference } from './_temp.ts';
+import { ActionLike } from './actions_base.ts';
+import { ConditionLike } from './conditions_base.ts';
 import {
     EventInterop,
     GlobalEvent,
     PlayerEvent,
     PlayerEventOptions,
     SubroutineEvent,
-} from "./event.ts";
-import { compileRule, RuleComponent } from "./rule_base.ts";
+} from './event.ts';
+import { compileRule, RuleComponent } from './rule_base.ts';
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -29,12 +24,6 @@ export interface RuleInterop {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-export interface ActionAddOptions {
-    prepend?: boolean;
-}
-export interface ConditionsAddOptions {
-    prepend?: boolean;
-}
 export interface CompileRuleOptions {
     lint?: boolean;
 }
@@ -46,7 +35,7 @@ export const RuleFactory = (
     const rule = new RuleComponent(event);
 
     let markTodo_signature = true;
-    let signature: string = "";
+    let signature: string = '';
 
     return {
         title(title: string) {
@@ -61,32 +50,26 @@ export const RuleFactory = (
             rule.disabled = true;
             return this;
         },
-        actions(actions: ActionLike[], options?: ActionAddOptions) {
-            if (options?.prepend) {
-                rule.actions.prepend(actions);
-            } else {
-                rule.actions.append(actions);
-            }
+        // action: {
+        //     u: u,
+        // },
+        actions(...actions: ActionLike[]) {
+            rule.actions.append(actions);
             return this;
         },
         conditions(
-            conditions: ConditionLike[],
-            options?: ConditionsAddOptions,
+            ...conditions: ConditionLike[]
         ) {
-            if (options?.prepend) {
-                rule.conditions.prepend(conditions);
-            } else {
-                rule.conditions.append(conditions);
-            }
+            rule.conditions.append(conditions);
             return this;
         },
-        ["_interop"]: {
+        ['_interop']: {
             _content: rule,
 
             compile(options?: CompileRuleOptions) {
                 if (options?.lint && this.lint()) {
                     throw new Error(
-                        "Rule failed on linting, aborting compile function.",
+                        'Rule failed on linting, aborting compile function.',
                     );
                 }
                 return compileRule(rule);
@@ -122,7 +105,7 @@ export const Subroutine = (ref: SubroutineReference) => {
         SubroutineEvent(ref)._interop,
         LINTER_SETS.rule.subroutine,
     );
-    return res as Omit<typeof res, "conditions">;
+    return res as Omit<typeof res, 'conditions'>;
 };
 
 export const PlayerRule = (options?: PlayerEventOptions) => {

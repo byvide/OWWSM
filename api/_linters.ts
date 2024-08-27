@@ -1,7 +1,7 @@
-import { ConditionsInterop } from "./conditions.ts";
-import { PlayerEventCategory } from "./event.ts";
-import { ModuleInterop } from "./module.ts";
-import { RuleInterop } from "./rule.ts";
+import { ConditionsInterop } from './conditions.ts';
+import { PlayerEventCategory } from './event.ts';
+import { ModuleInterop } from './module.ts';
+import { RuleInterop } from './rule.ts';
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -19,8 +19,9 @@ export function lintReport<T>(
             report.push(res);
         }
     });
+    console.log('REPORT', report);
 
-    return report;
+    return report.filter((item) => item);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -41,39 +42,34 @@ const CONDITIONS_LINTERS = {
         }
 
         if (duplicates.length > 0) {
-            return `Duplicate conditions found: ${duplicates.join(", ")}`;
+            return `Duplicate conditions found: ${duplicates.join(', ')}`;
         }
 
-        return "";
+        return '';
     },
 } satisfies { [key: string]: LinterFunction<ConditionsInterop> };
 
 const RULE_LINTERS = {
     conditions_ok(rule: RuleInterop) { //FIXME
         const res = rule._content.conditions._interop.lint();
-        return res ? res.join("\n") : "";
+        console.log('RULE LINT: COND', res);
+        return res.flat().join('\n');
     },
     title_length(rule: RuleInterop) {
-        return rule._content.title.length > 128
-            ? "Title cannot exceed 128 characters."
-            : "";
+        return rule._content.title.length > 128 ? 'Title cannot exceed 128 characters.' : '';
     },
     no_conditions(rule: RuleInterop) {
         return rule._content.conditions._interop._content.length
-            ? "Subroutines cannot have conditions."
-            : "";
+            ? 'Subroutines cannot have conditions.'
+            : '';
     },
     no_eventplayer_ref(rule: RuleInterop) {
         const regex = /\b([Ee]vent [Pp]layer)\b/;
 
-        return (rule._content.actions._interop.purified().some((item) =>
-                regex.test(item)
-            ) ||
-                rule._content.conditions._interop.purified().some((item) =>
-                    regex.test(item)
-                ))
+        return (rule._content.actions._interop.purified().some((item) => regex.test(item)) ||
+                rule._content.conditions._interop.purified().some((item) => regex.test(item)))
             ? 'Global rules cannot contain "Event Player" references. If this have been accidentally triggered by content of a workshop string, you can resolve this by using full uppercase "EVENT PLAYER" in your text.'
-            : "";
+            : '';
     },
     no_attacker_or_victim_ref(rule: RuleInterop) {
         const attackerRegex = /\b(Attacker|attacker)\b/;
@@ -86,7 +82,7 @@ const RULE_LINTERS = {
                     attackerRegex.test(item) || victimRegex.test(item)
                 ))
             ? 'Non combat rules cannot contain "Attacker" or "Victim" references. If this have been accidentally triggered by content of a workshop string, you can resolve this by using full uppercase "ATTACKER" or "VICTIM" in your text.'
-            : "";
+            : '';
     },
     no_healer_or_healee_ref(rule: RuleInterop) {
         const healerRegex = /\b(Healer|healer)\b/;
@@ -99,16 +95,15 @@ const RULE_LINTERS = {
                     healerRegex.test(item) || healeeRegex.test(item)
                 ))
             ? 'Non heal rules cannot contain "Healer" or "Healee" references. If this have been accidentally triggered by content of a workshop string, you can resolve this by using full uppercase "HEALER" or "HEALEE" in your text.'
-            : "";
+            : '';
     },
 } satisfies { [key: string]: LinterFunction<RuleInterop> };
 
 const MODULE_LINTERS = {
     rules_ok(m: ModuleInterop) { //FIXME
-        const res = m._content.ruleInterops.map((item) =>
-            item.lint().join("\n")
-        );
-        return res ? res.join("\n") : "";
+        const res = m._content.ruleInterops.map((item) => item.lint());
+        console.log('MOD LINT: RULES', res);
+        return res.flat().join('\n');
     },
 } satisfies { [key: string]: LinterFunction<ModuleInterop> };
 
