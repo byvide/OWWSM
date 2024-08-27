@@ -1,10 +1,31 @@
-import { INTEROP_SYMBOL, SubroutineReference } from "./_temp.ts";
+import { LINTER_SETS, lintReport, lintResult } from "./_linters.ts";
+import { SubroutineReference } from "./_temp.ts";
 import { PlayerEventOptions } from "./event.ts";
-import { ModuleBlock } from "./module_lib.ts";
-import { GlobalRule, PlayerRule, RuleInterop, Subroutine } from "./rule_api.ts";
+import { ModuleComponent } from "./module_base.ts";
+import { GlobalRule, PlayerRule, Subroutine } from "./rule.ts";
+import { indexVariableSet, VariableMap, VariableSet } from "./variables.ts";
 import { compileVariableSets } from "./workshop.ts";
 ////////////////////////////////////////////////////////////////////////////////////////////////
-type VariableSet = { [name: string]: number };
+
+export interface ModuleInterop {
+    _content: ModuleComponent;
+
+    compile(options?: CompileModuleOptions): string;
+    signature(): { //FIXME wtf is this signature
+        tag: string;
+        global: boolean;
+        player: boolean;
+    };
+
+    lint(): lintResult<ModuleInterop>;
+}
+
+export interface CompileModuleOptions {
+    lint?: boolean;
+    includeVariablesAs?: number;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
 
 type ModuleContext<
     TGlobal extends VariableSet,
@@ -14,52 +35,81 @@ type ModuleContext<
     global: TGlobal;
     player: TPlayer;
 };
-////////////////////////////////////////////////////////////////////////////////////////////////
-export interface ModuleCompileOptions {
-    includeVariablesAs: number;
-}
 
-//FIXME refact
-export function Module<
+export const Module = <
     TGlobal extends VariableSet,
     TPlayer extends VariableSet,
->(context: ModuleContext<TGlobal, TPlayer>) {
-    const mod = new ModuleBlock(context.name);
+>(context: ModuleContext<TGlobal, TPlayer>) => {
+    const mod = new ModuleComponent(
+        context.name,
+        indexVariableSet(context.global),
+        indexVariableSet(context.player),
+    );
 
-    const transformVariableSet = (set: TGlobal | TPlayer, prefix: string) => {
-        return Object.keys(set).reduce((acc, key, index) => {
-            acc[key as keyof typeof set] =
-                `${prefix}.${context.name}[${index}]`;
-            return acc;
-        }, {} as { [K in keyof typeof set]: string });
+    const mirroredGlobalVars = bakeVariables(
+        mod.globalVariables,
+        mod.name,
+        "Global",
+    ) as {
+        [K in keyof TGlobal]: () => string;
+    };
+    const mirroredPlayerVars = bakeVariables(
+        mod.playerVariables,
+        mod.name,
+        "Event Player",
+    ) as {
+        [K in keyof TPlayer]: (prefix?: string) => string;
     };
 
     return {
-        global: transformVariableSet(context.global, "Global") as {
-            [K in keyof TGlobal]: string;
+        var: {
+            global: mirroredGlobalVars,
+            player: mirroredPlayerVars,
         },
-        player: transformVariableSet(context.player, "Player") as {
-            [K in keyof TPlayer]: string;
+        new: {
+            GlobalRule() {
+                const r = GlobalRule();
+                mod.ruleInterops.push(r._interop);
+                return r;
+            },
+            Subroutine(ref: SubroutineReference) {
+                const r = Subroutine(ref);
+                mod.ruleInterops.push(r._interop);
+                return r;
+            },
+            PlayerRule(options?: PlayerEventOptions) {
+                const r = PlayerRule(options);
+                mod.ruleInterops.push(r._interop);
+                return r;
+            },
         },
-        GlobalRule() {
-            const r = GlobalRule();
-            mod.interopRules.push(r);
-            return r;
-        },
-        Subroutine(ref: SubroutineReference) {
-            const r = Subroutine(ref);
-            mod.interopRules.push(r);
-            return r;
-        },
-        PlayerRule(options?: PlayerEventOptions) {
-            const r = PlayerRule(options);
-            mod.interopRules.push(r);
-            return r;
-        },
-        attachRules(...rules: RuleInterop[]) {
-            mod.interopRules.push(...rules);
-        },
-        [INTEROP_SYMBOL]: {
+
+        //TODO add/attacH/reset ... naming and fields
+        // attachRules(...rules: RuleInterop[]) {
+        //     mod.ruleInterops.push(...rules);
+        // },
+        // detachRules(...rules: RuleInterop[]) {
+        //     mod.ruleInterops.push(...rules);
+        // },
+        ["_interop"]: {
+            _content: mod,
+
+            compile(options?: CompileModuleOptions) {
+                if (options?.lint && this.lint()) {
+                    throw new Error(
+                        "Rule failed on linting, aborting compile function.",
+                    );
+                }
+                return ((options?.includeVariablesAs)
+                    ? compileVariableSets(
+                        [this.signature()],
+                        options.includeVariablesAs,
+                    )
+                    : "") +
+                    mod.ruleInterops.reduce((acc, curr) => {
+                        return acc += "\n" + curr.compile();
+                    }, "");
+            },
             signature() {
                 return {
                     tag: context.name,
@@ -67,24 +117,29 @@ export function Module<
                     player: Boolean(Object.keys(context.player).length),
                 };
             },
-            compile(options?: ModuleCompileOptions) {
-                return (options?.includeVariablesAs)
-                    ? compileVariableSets(
-                        [this.signature()],
-                        options.includeVariablesAs,
-                    )
-                    : "" +
-                        mod.interopRules.reduce((acc, curr) => {
-                            return acc += "\n" + curr[INTEROP_SYMBOL].compile();
-                        }, "");
-            },
             lint() {
+                return lintReport<typeof this>(
+                    this,
+                    LINTER_SETS.module.basic,
+                );
             },
-            expose() {
-                return mod;
-            },
+        } as ModuleInterop,
+        priority(number: number) {
+            mod.priority = number;
+            return this;
         },
     };
-}
+};
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+// { hello: 12 }
+// { hello: () => Global.hello }
+const bakeVariables = (map: VariableMap, tag: string, defaul: string) => {
+    return Object.keys(map).reduce((acc, key) => {
+        acc[key as keyof typeof map] = (prefix?: string) =>
+            `${prefix ?? defaul}.${tag}[${map[key]}]`;
+        return acc;
+    }, {} as { [K in keyof typeof map]: (prefix?: string) => string });
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

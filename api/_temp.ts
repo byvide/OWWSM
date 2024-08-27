@@ -1,8 +1,5 @@
-////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////////////////////
 type defaultSubroutineNumbers = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 type defaultSubroutineNumbersfull = [
     0,
@@ -139,76 +136,15 @@ export type SubroutineReference = DefaultSubroutineReferenceFormat<
     defaultSubroutineNumbersfull[number]
 >;
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-export const INTEROP_SYMBOL = "_interop";
-export type INTEROP = typeof INTEROP_SYMBOL;
-////////////////////////////////////////////////////////////////////////////////////////////////
-import { encodeHex } from "jsr:@std/encoding/hex";
-
-// export const ENCODER = new TextEncoder(); //FIXME
-export async function hashString(msg: string) {
-    const msgBuffer = new TextEncoder().encode(msg);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-    return encodeHex(hashBuffer);
-}
-////////////////////////////////////////////////////////////////////////////////////////////////
-
 ////////////////////////////////////////////////////////////////////////////////////////
-export type ActionLike = string;
 
-export class ActionCollection {
-    private actions: ActionLike[] = [];
-
-    append(a: ActionLike[]) {
-        this.actions.push(...a);
-    }
-    prepend(a: ActionLike[]) {
-        this.actions.unshift(...a);
-    }
-
-    expose() {
-        return this.actions;
-    }
-
-    compile() { //FIXME ";" when 0
-        return `\
-    actions
-    {
-	${this.actions.join(";\n\t")};
-    }`;
-    }
-}
-////////////////////////////////////////////////////////////////////////////////////////
-export type ConditionLike = string;
-
-export class ConditionCollection {
-    private conditions: ActionLike[] = [];
-
-    append(a: ActionLike[]) {
-        this.conditions.push(...a);
-    }
-    prepend(a: ActionLike[]) {
-        this.conditions.unshift(...a);
-    }
-
-    expose() {
-        return this.conditions;
-    }
-
-    compile() {
-        if (!this.conditions.length) {
-            return "";
-        }
-
-        return `\
-    conditions
-    {
-	${this.conditions.join(";\n\t")};
-    }`;
-    }
-    hash() {
-        return hashString(JSON.stringify(this.conditions)); //FIXME order of conditions !!!
-    }
-}
+export type PurePlayerRef =
+    | "Attacker"
+    | "Event Player"
+    | "Healee"
+    | "Healer"
+    | "Host Player"
+    | "Local Player"
+    | "Victim";
 
 ////////////////////////////////////////////////////////////////////////////////////////

@@ -1,48 +1,43 @@
 import { Module } from "./api/module.ts";
-import { compileVariableSets } from "./api/workshop.ts";
+import { foo } from "./api/variables.ts";
 ////////////////////////////////////////////////////////////////////////////////////////////////
-import { USE_CUSTOM_ECMASCRIPT_API_OVERRIDES } from "./api/OVERRIDE_ECMASCRIPT_API.ts";
-void USE_CUSTOM_ECMASCRIPT_API_OVERRIDES; // i need this so the import wont be deleted by linters, and these global overrides only work in a file if i import something where they were defined
+import { USE_CUSTOM_ECMASCRIPT_API_PATCH } from "./PATCH_ECMASCRIPT.ts";
+void USE_CUSTOM_ECMASCRIPT_API_PATCH;
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 const m = Module({
     name: "ATTR",
     global: {
-        "hello": 234,
+        "hello": "asd",
     },
     player: {
-        "bello": 12,
+        "bello": "",
     },
 });
 
-m.GlobalRule()
+m.new.GlobalRule()
     .actions([
-        `${m.global.hello} = "Hello there"`,
+        `${m.var.player.bello()} = "Hello there"`,
         "Loop",
         "Loop",
     ])
-    .title("Something");
+    .title(
+        "Something123456789Something123456789Something123456789Something123456789Something123456789Something123456789Something123456789Something123456789",
+    );
 
-m.PlayerRule({ type: "Player Died" })
+m.new.PlayerRule()
     .title("asd")
     .disable()
     .conditions([
-        "Never",
+        "Attacker == hello",
+        "ok  > ok",
     ])
     .actions([
         "Ok",
     ]);
 
-m._interop.compile({ "includeVariablesAs": 12 });
+// m._interop.compile({ includeVariablesAs: 12 }).log();
 
-const m2 = Module({
-    name: "ATTR123",
-    global: {
-        "hellobello": 234,
-    },
-    player: {
-        "oksi": 12,
-    },
-});
-
-compileVariableSets([m._interop.signature(), m2._interop.signature()]).log();
+// foo("hello").bello;
+const a = foo("hello", m._interop._content.globalVariables)?.hello?.[2];
+console.log(a);

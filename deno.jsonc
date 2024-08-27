@@ -1,5 +1,6 @@
 {
-    "compilerOptions": {
-        "experimentalDecorators": true
+    "imports": {
+        "@std/assert": "jsr:@std/assert@^1.0.0",
+        "@std/encoding/hex": "jsr:@std/encoding/hex"
     }
 }

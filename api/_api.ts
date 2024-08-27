@@ -1,6 +1,7 @@
+import { Actions } from "./actions.ts";
+import { Conditions } from "./conditions.ts";
 import { GlobalEvent, PlayerEvent, SubroutineEvent } from "./event.ts";
-import { GlobalRule, PlayerRule, Subroutine } from "./rule_api.ts";
-import { SLOT, TEAM } from "./values.const.ts";
+import { GlobalRule, PlayerRule, Subroutine } from "./rule.ts";
 
 export const api = {
     event: {
@@ -13,8 +14,6 @@ export const api = {
         player: PlayerRule,
         subroutine: Subroutine,
     },
-    values: {
-        team: TEAM,
-        slot: SLOT,
-    },
+    actions: Actions,
+    conditions: Conditions,
 };
